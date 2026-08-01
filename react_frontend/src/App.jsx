@@ -5,7 +5,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import PlaceholderPage from "./pages/PlaceholderPage";
+import DashboardPage from "./pages/DashboardPage";
+import TransactionsPage from "./pages/TransactionsPage";
+import ReportsPage from "./pages/ReportsPage";
 import theme from "./theme/theme";
 
 export default function App() {
@@ -24,33 +26,9 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              <Route
-                path="/"
-                element={
-                  <PlaceholderPage
-                    title="Dashboard"
-                    note="Summary cards arrive in stage-09."
-                  />
-                }
-              />
-              <Route
-                path="/transactions"
-                element={
-                  <PlaceholderPage
-                    title="Transactions"
-                    note="Income and expense forms arrive in stage-09."
-                  />
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <PlaceholderPage
-                    title="Reports"
-                    note="Category and month reports arrive in stage-09."
-                  />
-                }
-              />
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/transactions" element={<TransactionsPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
