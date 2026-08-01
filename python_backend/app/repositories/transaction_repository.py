@@ -2,9 +2,11 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import extract, func, select
 from sqlalchemy.orm import Session
 
+from app.core.constants import TRANSACTION_TYPE_EXPENSE, TRANSACTION_TYPE_INCOME
+from app.models.category import Category
 from app.models.transaction import Transaction
 
 
@@ -63,3 +65,62 @@ class TransactionRepository:
         row.is_deleted = True
         self.db.add(row)
         self.db.commit()
+
+    def summary_for_user(self, user_id: uuid.UUID) -> tuple[Decimal, Decimal]:
+        income = self.db.scalar(
+            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.user_id == user_id,
+                Transaction.is_deleted.is_(False),
+                Transaction.transaction_type == TRANSACTION_TYPE_INCOME,
+            )
+        )
+        expense = self.db.scalar(
+            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.user_id == user_id,
+                Transaction.is_deleted.is_(False),
+                Transaction.transaction_type == TRANSACTION_TYPE_EXPENSE,
+            )
+        )
+        return Decimal(str(income)), Decimal(str(expense))
+
+    def totals_by_category(self, user_id: uuid.UUID) -> list[tuple]:
+        statement = (
+            select(
+                Category.id,
+                Category.name,
+                Transaction.transaction_type,
+                func.sum(Transaction.amount),
+            )
+            .select_from(Transaction)
+            .outerjoin(Category, Category.id == Transaction.category_id)
+            .where(Transaction.user_id == user_id, Transaction.is_deleted.is_(False))
+            .group_by(Category.id, Category.name, Transaction.transaction_type)
+            .order_by(Transaction.transaction_type, Category.name)
+        )
+        return list(self.db.execute(statement).all())
+
+    def totals_by_month(self, user_id: uuid.UUID) -> list[tuple]:
+        year_col = extract("year", Transaction.transaction_date)
+        month_col = extract("month", Transaction.transaction_date)
+        statement = (
+            select(
+                year_col.label("year"),
+                month_col.label("month"),
+                func.coalesce(
+                    func.sum(Transaction.amount).filter(
+                        Transaction.transaction_type == TRANSACTION_TYPE_INCOME
+                    ),
+                    0,
+                ).label("total_income"),
+                func.coalesce(
+                    func.sum(Transaction.amount).filter(
+                        Transaction.transaction_type == TRANSACTION_TYPE_EXPENSE
+                    ),
+                    0,
+                ).label("total_expense"),
+            )
+            .where(Transaction.user_id == user_id, Transaction.is_deleted.is_(False))
+            .group_by(year_col, month_col)
+            .order_by(year_col.desc(), month_col.desc())
+        )
+        return list(self.db.execute(statement).all())
