@@ -11,8 +11,8 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ==========================================================
 
 CREATE TABLE transaction_types (
-id SMALLINT PRIMARY KEY,
-name VARCHAR(50) NOT NULL UNIQUE
+    id SMALLINT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
 );
 
 -- ==========================================================
@@ -20,20 +20,12 @@ name VARCHAR(50) NOT NULL UNIQUE
 -- ==========================================================
 
 CREATE TABLE users (
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-```
-username VARCHAR(100) NOT NULL UNIQUE,
-
-password_hash VARCHAR(255) NOT NULL,
-
-is_active BOOLEAN NOT NULL DEFAULT TRUE,
-
-created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-```
-
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==========================================================
@@ -41,68 +33,54 @@ updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 -- ==========================================================
 
 CREATE TABLE categories (
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NULL,
+    name VARCHAR(100) NOT NULL,
+    transaction_type SMALLINT NOT NULL,
+    is_system BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-```
-user_id UUID NULL,
+    CONSTRAINT fk_categories_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
 
-name VARCHAR(100) NOT NULL,
-
-transaction_type SMALLINT NOT NULL,
-
-is_system BOOLEAN NOT NULL DEFAULT FALSE,
-
-created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-CONSTRAINT fk_categories_user
-    FOREIGN KEY (user_id)
-    REFERENCES users(id)
-    ON DELETE CASCADE,
-
-CONSTRAINT fk_categories_transaction_type
-    FOREIGN KEY (transaction_type)
-    REFERENCES transaction_types(id)
-```
-
+    CONSTRAINT fk_categories_transaction_type
+        FOREIGN KEY (transaction_type)
+        REFERENCES transaction_types(id)
 );
 
 -- Prevent duplicate category names for the same owner/type
 CREATE UNIQUE INDEX uq_categories
 ON categories (
-COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid),
-name,
-transaction_type
+    COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    name,
+    transaction_type
 );
 
 -- ==========================================================
 -- PARTIES
+-- Payment channels in seed data: Cash, Wallet, Bank, UPI
 -- ==========================================================
 
 CREATE TABLE parties (
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NULL,
+    name VARCHAR(150) NOT NULL,
+    is_system BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-```
-user_id UUID NULL,
-
-name VARCHAR(150) NOT NULL,
-
-is_system BOOLEAN NOT NULL DEFAULT FALSE,
-
-created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-CONSTRAINT fk_parties_user
-    FOREIGN KEY (user_id)
-    REFERENCES users(id)
-    ON DELETE CASCADE
-```
-
+    CONSTRAINT fk_parties_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
 );
 
 -- Prevent duplicate party names for the same owner
 CREATE UNIQUE INDEX uq_parties
 ON parties (
-COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid),
-name
+    COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    name
 );
 
 -- ==========================================================
@@ -110,47 +88,34 @@ name
 -- ==========================================================
 
 CREATE TABLE transactions (
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    transaction_date TIMESTAMP NOT NULL,
+    transaction_type SMALLINT NOT NULL,
+    amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+    party_id UUID,
+    category_id UUID,
+    description VARCHAR(500),
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-```
-user_id UUID NOT NULL,
+    CONSTRAINT fk_transactions_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
 
-transaction_date TIMESTAMP NOT NULL,
+    CONSTRAINT fk_transactions_party
+        FOREIGN KEY (party_id)
+        REFERENCES parties(id),
 
-transaction_type SMALLINT NOT NULL,
+    CONSTRAINT fk_transactions_category
+        FOREIGN KEY (category_id)
+        REFERENCES categories(id),
 
-amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
-
-party_id UUID,
-
-category_id UUID,
-
-description VARCHAR(500),
-
-is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
-created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-CONSTRAINT fk_transactions_user
-    FOREIGN KEY (user_id)
-    REFERENCES users(id)
-    ON DELETE CASCADE,
-
-CONSTRAINT fk_transactions_party
-    FOREIGN KEY (party_id)
-    REFERENCES parties(id),
-
-CONSTRAINT fk_transactions_category
-    FOREIGN KEY (category_id)
-    REFERENCES categories(id),
-
-CONSTRAINT fk_transactions_type
-    FOREIGN KEY (transaction_type)
-    REFERENCES transaction_types(id)
-```
-
+    CONSTRAINT fk_transactions_type
+        FOREIGN KEY (transaction_type)
+        REFERENCES transaction_types(id)
 );
 
 -- ==========================================================
@@ -158,21 +123,15 @@ CONSTRAINT fk_transactions_type
 -- ==========================================================
 
 CREATE TABLE transaction_attachments (
-id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    transaction_id UUID NOT NULL,
+    file_url TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-```
-transaction_id UUID NOT NULL,
-
-file_url TEXT NOT NULL,
-
-created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-CONSTRAINT fk_transaction_attachments
-    FOREIGN KEY (transaction_id)
-    REFERENCES transactions(id)
-    ON DELETE CASCADE
-```
-
+    CONSTRAINT fk_transaction_attachments
+        FOREIGN KEY (transaction_id)
+        REFERENCES transactions(id)
+        ON DELETE CASCADE
 );
 
 -- ==========================================================

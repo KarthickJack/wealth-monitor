@@ -6,7 +6,6 @@ from app.core.settings import settings
 
 engine = create_engine(
     DATABASE_URL,
-    echo=True,
     echo=settings.debug,
-    pool_pre_ping=True
+    pool_pre_ping=True,
 )

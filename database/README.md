@@ -57,9 +57,9 @@ Advantages:
 
 ### One Parties Table
 
-Instead of maintaining separate Payer and Payee tables, all business entities are stored in a single `parties` table.
+In this training app, seed parties are **payment channels** (Cash, Wallet, Bank, UPI).
 
-A party may participate in both income and expense transactions.
+The same table can later hold people or shops (payer/payee style). One table keeps the mental model simple for juniors.
 
 ---
 
