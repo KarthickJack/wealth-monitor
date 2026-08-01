@@ -39,7 +39,9 @@ Every rupee in or out is a **transaction**. Reports add incomes and subtract exp
 | `stage-07-summary-reports` | How wealth is calculated | Show totals, by category, by month |
 | `stage-08-frontend-shell` | Login UI, routing, API client | Login screen and protected pages |
 | `stage-09-frontend-features` | Full clickable UI | Dashboard + transactions + reports |
-| `stage-10-docker-deploy` | Run and deploy anywhere | `docker compose up --build` |
+| `stage-10-docker-deploy` | Run and deploy anywhere | `docker compose up --build` then open :3000 |
+
+Deploy details: [DEPLOY.md](DEPLOY.md)
 
 ## Files to open first (stage 01)
 

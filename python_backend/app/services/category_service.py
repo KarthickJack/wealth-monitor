@@ -23,6 +23,7 @@ class CategoryService:
                 transaction_type=payload.transaction_type,
             )
         except IntegrityError as exc:
+            self.categories.db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Category already exists for this type",

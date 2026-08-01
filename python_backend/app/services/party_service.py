@@ -19,6 +19,7 @@ class PartyService:
         try:
             party = self.parties.create_for_user(user_id=user.id, name=payload.name)
         except IntegrityError as exc:
+            self.parties.db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Party already exists",
